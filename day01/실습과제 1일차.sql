@@ -1,3 +1,31 @@
+<학습 평가 과제(1일차)>
+
+Q1-1
+(1)  논리 설계
+(2)  데이터 모델링
+
+Q1-2
+(1) E-R 모델
+(2) E-R 모델
+(3) Entity
+
+Q1-3
+(1) E-R Diagram
+(2) 관계
+
+Q1-4
+(1) 카디널리티(Cardinality)
+(2) 옵셔널리티(Optionality)
+
+Q1-5
+(1) 스키마
+(2) 테이블
+
+Q1-6
+(1) Table
+(2) Index
+(3) Sequence
+
 /* 실습과제 139P */
 SELECT EMPNO AS EMPLOYEE_NO
         , ENAME AS EMPLOYEE_NAME
@@ -70,10 +98,11 @@ WHERE JOB IN ('SALESMAN', 'CLERK')
 ORDER BY SAL ASC;
 
 /* 실습과제 170P 3번*/
-SELECT EMPNO, ENAME, HIREDATE,
+SELECT EMPNO, ENAME, TO_CHAR(HIREDATE, 'YYYY-MM-DD') AS HIREDATE,
     TO_CHAR(NEXT_DAY(ADD_MONTHS(HIREDATE, 3), '월요일'), 'YYYY-MM-DD') AS R_JOB,
     NVL(TO_CHAR(COMM), 'N/A') AS COMM
 FROM EMP
+
 
 
 /* 실습과제 170P 4번*/
@@ -88,9 +117,8 @@ SELECT EMPNO, ENAME, MGR
         END AS CHG_MGR
 FROM EMP
 
-
-
-
+SELECT TO_CHAR(SYSDATE, 'DAY')
+FROM DUAL
 
 
 

@@ -1,0 +1,23 @@
+CREATE TABLE EMP (
+	emp_num NUMBER PRIMARY KEY,
+	name VARCHAR2(20) NOT NULL,
+	job VARCHAR2(20) NOT NULL,
+	level VARCHAR2(20) NOT NULL,
+	move_hope VARCHAR2(5) NOT NULL,
+	cert_num NUMBER,
+	CONSTRAINT employees_fk_cert FOREIGN KEY (cert_num) REFERENCES CERTIFICATE (cert_num) ON DELETE CASCADE,
+)
+
+CREATE TABLE DEPT (
+    department_id NUMBER PRIMARY KEY,
+    department_name VARCHAR2(20) NOT NULL,
+    job VARCHAR2(20) NOT NULL,
+    workload VARCHAR2(20) NOT NULL,
+    related_cert NUMBER
+)
+
+CREATE TABLE CERTIFICATE (
+    cert_num NUMBER PRIMARY KEY,
+    cert_title VARCHAR2(5)
+)
+

@@ -1,3 +1,34 @@
+/* 
+이론과제 3일차
+
+Q3-1
+(1) 원자성
+(2) 완전 함수적 종속
+(3) 이행적 종속 제거
+
+Q3-2
+(1) 제3정규화
+(2) 제2정규화
+
+Q3-3
+(1) inner join
+(2) left join
+(3) right join
+(4) outer join
+
+Q3-4
+(1) 반정규화
+
+Q3-5
+(1) 인덱스
+(2) 인덱스
+(3) 인덱스
+
+Q3-6
+(1) 트랜잭션
+(2) Atomicity(원자성), Consistency(일관성)
+ */
+
 /* 실습과제 222 1번*/
 CREATE TABLE DEPT_TEST AS SELECT * FROM DEPT
 
@@ -78,14 +109,6 @@ ALTER TABLE EMP_USER MODIFY SUR_NAME CHAR(10)
 /* 실습과제 228 5번 */
 ALTER TABLE EMP_USER RENAME COLUMN ENAME TO FULL_NAME
 
-/* 실습과제 242 이론문제
- 1. 제약조건
- 2. UNIQUE
- 3. NOT NULL
- 4. PRIMARY KEY
- 5. 외래키
- */
-
 /* 실습과제 249 1번 */
 CREATE TABLE EMP_IDX AS SELECT * FROM EMP
 
@@ -105,3 +128,11 @@ AS (SELECT EMPNO, ENAME, JOB, DEPTNO, SAL, CASE WHEN COMM IS NOT NULL THEN 'Y' E
         WHERE SAL >= 20000)
 
 SELECT * FROM VW_EMP_IDX
+
+/* 실습과제 242 이론문제
+ 1. 제약조건
+ 2. UNIQUE
+ 3. NOT NULL
+ 4. PRIMARY KEY
+ 5. 외래키
+ */

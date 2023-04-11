@@ -1,3 +1,9 @@
+select * from emp
+
+select * from CERTIFICATE
+
+select * from dept
+
 CREATE TABLE CERTIFICATE (
     cert_num NUMBER Primary Key,
     cert_title VARCHAR2(25)

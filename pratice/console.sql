@@ -274,8 +274,186 @@ GROUP BY CASE WHEN age < 20 THEN '어린이'
 BMI로 자르기
 
 SELECT CASE WHEN weight / POWER(height / 100, 2) < 18.5 THEN '저체중'
+            WHEN 18.5 <= weight / POWER(height/100, 2) AND weight / POWER(height/100, 2) < 25 THEN '정상'
+            WHEN 25 <= weight / POWER(height/100, 2) THEN '과체중'
+            ELSE NULL END AS bmi,
+        COUNT(*)
 FROM Persons
+GROUP BY CASE WHEN weight / POWER(height / 100, 2) < 18.5 THEN '저체중'
+            WHEN 18.5 <= weight / POWER(height/100, 2) AND weight / POWER(height/100, 2) < 25 THEN '정상'
+            WHEN 25 <= weight / POWER(height/100, 2) THEN '과체중'
+            ELSE NULL END
 
+SELECT name
+        , age
+        , CASE WHEN age < 20 THEN '어린이'
+               WHEN age BETWEEN 20 AND 69 THEN '성인'
+               WHEN age >= 70 THEN '노인'
+               ELSE NULL END AS age_class,
+          RANK() OVER(PARTITION BY CASE WHEN age < 20 THEN '어린이'
+                                        WHEN age BETWEEN 20 AND 69 THEN '성인'
+                                        WHEN age >= 70 THEN '노인'
+                                        ELSE NULl END
+                      ORDER BY age) AS age_rank_in_class
+        FROM Persons
+ORDER BY age_class, age_rank_in_class
+
+CREATE TABLE Sales
+(
+    company CHAR(1) NOT NULL,
+    year INTEGER NOT NULL,
+    sale INTEGER NOT NULL,
+    CONSTRAINT pk_sales PRIMARY KEY (company, year)
+);
+
+select * from sales;
+
+CREATE TABLE Sales2
+(company CHAR(1) NOT NULL,
+ year    INTEGER NOT NULL ,
+ sale    INTEGER NOT NULL ,
+ var     CHAR(1) ,
+   CONSTRAINT pk_sales2 PRIMARY KEY (company, year));
+
+
+
+
+INSERT INTO Sales2
+SELECT company
+        , year
+        , sale
+        , CASE SIGN(sale - MAX(sale)
+                OVER (PARTITION BY company
+                        ORDER BY year
+                        ROWS BETWEEN 1 PRECEDING
+                                AND  1 PRECEDING))
+        WHEN 0 THEN '='
+        WHEN 1 THEN '+'
+        WHEN -1 THEN '-'
+        ELSE NULL END AS var
+FROM Sales;
+
+select * from sales2;
+
+SELECT company
+        , year
+        , sale
+        , MAX(company)
+                OVER (PARTITION BY company
+                        ORDER BY year
+                        ROWS BETWEEN 1 PRECEDING
+                             AND 1 PRECEDING) AS pre_company
+        , MAX(sale)
+                OVER (PARTITION BY company
+                        ORDER BY year
+                        ROWS BETWEEN 1 PRECEDING
+                             AND 1 PRECEDING) AS pre_sale
+FROM Sales;
+
+INSERT INTO Sales VALUES ('A', 2002, 50);
+INSERT INTO Sales VALUES ('A', 2003, 52);
+INSERT INTO Sales VALUES ('A', 2004, 55);
+INSERT INTO Sales VALUES ('A', 2007, 55);
+INSERT INTO Sales VALUES ('B', 2001, 27);
+INSERT INTO Sales VALUES ('B', 2005, 28);
+INSERT INTO Sales VALUES ('B', 2006, 28);
+INSERT INTO Sales VALUES ('B', 2009, 30);
+INSERT INTO Sales VALUES ('C', 2001, 40);
+INSERT INTO Sales VALUES ('C', 2005, 39);
+INSERT INTO Sales VALUES ('C', 2006, 38);
+INSERT INTO Sales VALUES ('C', 2010, 35);
+
+CREATE TABLE PostalCode
+(
+    pcode CHAR(7),
+    district_name VARCHAR(256),
+    CONSTRAINT pk_pcode PRIMARY KEY(pcode)
+)
+
+INSERT INTO PostalCode VALUES ('4130001',  '시즈오카 아타미 이즈미');
+INSERT INTO PostalCode VALUES ('4130002',  '시즈오카 아타미 이즈산');
+INSERT INTO PostalCode VALUES ('4130103',  '시즈오카 아타미 아지로');
+INSERT INTO PostalCode VALUES ('4130041',  '시즈오카 아타미 아오바초');
+INSERT INTO PostalCode VALUES ('4103213',  '시즈오카 이즈 아오바네');
+INSERT INTO PostalCode VALUES ('4380824',  '시즈오카 이와타 아카');
+
+select * from postalcode;
+
+SELECT pcode
+        , district_name
+        , CASE WHEN pcode = '4130033'       THEN 0
+               WHEN pcode LIKE '413003%'    THEN 1
+               WHEN pcode LIKE '41300%'     THEN 2
+               WHEN pcode LIKE '413%'       THEN 4
+               ELSE NULL END AS 'rank'
+FROM postalcode;
+
+순위가 가장 높다는 것은 rank 필드의 값이 가장 작다는 의미로 MIN 함수를 사용하면 구할 수 있음
+
+SELECT pcode
+        , district_name
+FROM PostalCode
+WHERE CASE WHEN pcode = '4130033'    THEN 0
+           WHEN pcode LIKE '413003%' THEN 1
+           WHEN pcode LIKE '41300%' THEN 2
+           WHEN pcode LIKE '4130%' THEN 3
+           WHEN pcode LIKE '413%' THEN 4
+           WHEN pcode LIKE '41%' THEN 5
+           WHEN pcode LIKE '4%' THEN 6
+           ELSE NULL END =
+                (SELECT MIN(CASE WHEN pcode =))
+FROM PostalCode
+
+
+CREATE TABLE PostalHistory
+(
+    name CHAR(1)
+    , pcode CHAR(7)
+    , new_pcode CHAR(7)
+    , CONSTRAINT pk_name_pcode PRIMARY KEY(name, pcode)
+)
+
+CREATE INDEX idx_new_pcode ON PostalHistory(new_pcode);
+
+
+CREATE TABLE PostalHistory2
+(
+    name CHAR(1),
+    pcode CHAR(7),
+    lft REAL NOT NULL,
+    rgt REAL NOT NULL,
+    CONSTRAINT pk_name_pcode2 PRIMARY KEY(name, pcode),
+    CONSTRAINT uq_name_lft UNIQUE(name, lft),
+    CONSTRAINT uq_name_rgt UNIQUE(name, rgt),
+    CHECK(lft < rgt)
+);
+
+select * from PostalHistory2;
+
+INSERT INTO PostalHistory2 VALUES ('A', '4130001', 0,   27);
+INSERT INTO PostalHistory2 VALUES ('A', '4130002', 9,   18);
+INSERT INTO PostalHistory2 VALUES ('A', '4130103', 12,  15);
+INSERT INTO PostalHistory2 VALUES ('B', '4130041', 0,   27);
+INSERT INTO PostalHistory2 VALUES ('C', '4103213', 0,   27);
+INSERT INTO PostalHistory2 VALUES ('C', '4380824', 9,   18);
+
+SELECT name,pcode
+FROM PostalHistory2 PH1
+WHERE name = 'A'
+AND NOT EXISTS(
+    SELECT *
+    FROM PostalHistory2 PH2
+    WHERE PH2.name = 'A'
+    AND PH1.lft > PH2.lft);
+
+반복계는 윈도우함수와 CASE WHEN 함수를 사용한다.
+
+
+CREATE TABLE Employees
+(emp_id CHAR(8),
+ emp_name VARCHAR(32),
+ dept_id CHAR(2),
+     CONSTRAINT pk_emp PRIMARY KEY(emp_id));
 
 
 

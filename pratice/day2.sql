@@ -752,6 +752,233 @@ and ot1.seq = (select max(seq)
                  and ot2.val is not null))
 where val is null;
 
+select * from ScoreCols;
+
+CREATE TABLE ScoreRows
+(student_id CHAR(4)    NOT NULL,
+ subject    VARCHAR(8) NOT NULL,
+ score      INTEGER ,
+  CONSTRAINT pk_ScoreRows PRIMARY KEY(student_id, subject));
+
+CREATE TABLE ScoreCols
+(student_id CHAR(4)    NOT NULL,
+ score_en      INTEGER ,
+ score_nl      INTEGER ,
+ score_mt      INTEGER ,
+  CONSTRAINT pk_ScoreCols PRIMARY KEY (student_id));
+
+INSERT INTO ScoreRows VALUES ('A001', '영어', 100);
+INSERT INTO ScoreRows VALUES ('A001', '국어', 58);
+INSERT INTO ScoreRows VALUES ('A001', '수학', 90);
+INSERT INTO ScoreRows VALUES ('B002', '영어', 77);
+INSERT INTO ScoreRows VALUES ('B002', '국어', 60);
+INSERT INTO ScoreRows VALUES ('C003', '영어', 52);
+INSERT INTO ScoreRows VALUES ('C003', '국어', 49);
+INSERT INTO ScoreRows VALUES ('C003', '사회', 100);
+
+INSERT INTO ScoreCols VALUES ('A001', NULL, NULL, NULL);
+INSERT INTO ScoreCols VALUES ('B002', NULL, NULL, NULL);
+INSERT INTO ScoreCols VALUES ('C003', NULL, NULL, NULL);
+INSERT INTO ScoreCols VALUES ('D004', NULL, NULL, NULL);
+
+select * from ScoreRows;
+select * from ScoreCols;
+
+UPDATE ScoreCols
+set (score_en, score_nl, score_mt)
+= (Select max(case when subject = '영어'
+                then score
+                else null end) as score_en,
+          max(case when subject = '국어'
+                then score
+                else null end) as score_nl,
+          max(case when subject = '수학'
+                then score
+                else null end) as score_mt)
+from ScoreRows SR
+where SR.student_id = ScoreCols.student_id)
+
+update ScoreCols
+set score_en = coalesce((select score
+                         from ScoreRows
+                         where student_id = ScoreCols.student_id
+                           and subject = '영어'), 0),
+    score_nl = coalesce((select score
+                         from ScoreRows
+                         where student_id = ScoreCols.student_id
+                           and subject = '국어'), 0),
+    score_mt = coalesce((select score
+                         from ScoreRows
+                         where student_id = ScoreCols.student_id
+                           and subject = '수학'), 0)
+where exists(select *
+             from ScoreRows
+             where student_id = ScoreCols.student_id);
+
+
+DELETE FROM ScoreCols;
+INSERT INTO ScoreCols VALUES ('A001',100, 58, 90);
+INSERT INTO ScoreCols VALUES ('B002', 77, 60, NULL);
+INSERT INTO ScoreCols VALUES ('C003', 52, 49, NULL);
+INSERT INTO ScoreCols VALUES ('D004', 10, 70, 100);
+
+DELETE FROM ScoreRows;
+INSERT INTO ScoreRows VALUES ('A001', '영어', NULL);
+INSERT INTO ScoreRows VALUES ('A001', '국어', NULL);
+INSERT INTO ScoreRows VALUES ('A001', '수학', NULL);
+INSERT INTO ScoreRows VALUES ('B002', '영어', NULL);
+INSERT INTO ScoreRows VALUES ('B002', '국어', NULL);
+INSERT INTO ScoreRows VALUES ('C003', '영어', NULL);
+INSERT INTO ScoreRows VALUES ('C003', '국어', NULL);
+INSERT INTO ScoreRows VALUES ('C003', '사회', NULL);
+
+select * from ScoreRows;
+
+CREATE TABLE Stocks
+(brand      VARCHAR(8) NOT NULL,
+ sale_date  DATE       NOT NULL,
+ price      INTEGER    NOT NULL,
+    CONSTRAINT pk_Stocks PRIMARY KEY (brand, sale_date));
+
+INSERT INTO Stocks VALUES ('A철강', '2008-07-01', 1000);
+INSERT INTO Stocks VALUES ('A철강', '2008-07-04', 1200);
+INSERT INTO Stocks VALUES ('A철강', '2008-08-12', 800);
+INSERT INTO Stocks VALUES ('B상사', '2008-06-04', 3000);
+INSERT INTO Stocks VALUES ('B상사', '2008-09-11', 3000);
+INSERT INTO Stocks VALUES ('C전기', '2008-07-01', 9000);
+INSERT INTO Stocks VALUES ('D산업', '2008-06-04', 5000);
+INSERT INTO Stocks VALUES ('D산업', '2008-06-05', 5000);
+INSERT INTO Stocks VALUES ('D산업', '2008-06-06', 4800);
+INSERT INTO Stocks VALUES ('D산업', '2008-12-01', 5100);
+
+select * from Stocks;
+
+CREATE TABLE Stocks2
+(brand      VARCHAR(8) NOT NULL,
+ sale_date  DATE       NOT NULL,
+ price      INTEGER    NOT NULL,
+ trend      CHAR(3)    ,
+    CONSTRAINT pk_Stocks2 PRIMARY KEY (brand, sale_date));
+
+select * from stocks2;
+
+insert into Stocks2
+select brand,
+       sale_date,
+       price,
+       case sign(price -
+                 (select price
+                  from Stocks
+                  where brand = Stocks.brand
+                    and sale_date =
+                        (select max(sale_Date)
+                         from stocks s2
+                         where brand = Stocks.brand
+                           and sale_date < Stocks.sale_date)))
+           when -1 then '아래'
+           when 0 then '->'
+           when 1 then '위'
+           else null
+           end
+from Stocks;
+
+
+select max(s2.sale_date)
+                         from stocks s2, Stocks s1
+                         where s1.brand = s2.brand
+                           and s2.sale_date < s1.sale_date;
+
+insert into stocks2
+select brand, sale_date, price
+case sign(price -
+            max(price) over (partition by brand
+                            order by sale_date
+                            rows between 1 preceding
+                            and 1 preceding))
+            when -1 then '아래'
+            when 0 then '->'
+            when 1 then '위'
+            else null
+     end
+from Stocks s2;
+
+select max(price) over (partition by brand order by sale_date rows between 1 preceding and 1 preceding)
+from stocks2;
+
+CREATE TABLE Orders
+(
+    order_id    INTEGER     NOT NULL,
+    　order_shop VARCHAR(32) NOT NULL,
+    　order_name VARCHAR(32) NOT NULL,
+    　order_date DATE
+);
+
+INSERT INTO Orders VALUES (10000, '서울', '윤인성',     '2011/8/22');
+INSERT INTO Orders VALUES (10001, '인천', '연하진',     '2011/9/1');
+INSERT INTO Orders VALUES (10002, '인천', '패밀리마트', '2011/9/20');
+INSERT INTO Orders VALUES (10003, '부천', '한빛미디어', '2011/8/5');
+INSERT INTO Orders VALUES (10004, '수원', '동네슈퍼',   '2011/8/22');
+INSERT INTO Orders VALUES (10005, '성남', '야근카페',   '2011/8/29');
+
+CREATE TABLE OrderReceipts
+( order_id INTEGER NOT NULL,
+　order_receipt_id INTEGER NOT NULL,
+　item_group VARCHAR(32) NOT NULL,
+　delivery_date DATE NOT NULL
+);
+
+INSERT INTO OrderReceipts VALUES (10000, 1, '식기',         '2011/8/24');
+INSERT INTO OrderReceipts VALUES (10000, 2, '과자',         '2011/8/25');
+INSERT INTO OrderReceipts VALUES (10000, 3, '소고기',       '2011/8/26');
+INSERT INTO OrderReceipts VALUES (10001, 1, '어패류',       '2011/9/4');
+INSERT INTO OrderReceipts VALUES (10002, 1, '과자',         '2011/9/22');
+INSERT INTO OrderReceipts VALUES (10002, 2, '조미료 세트',  '2011/9/22');
+INSERT INTO OrderReceipts VALUES (10003, 1, '쌀',           '2011/8/6');
+INSERT INTO OrderReceipts VALUES (10003, 2, '소고기',       '2011/8/10');
+INSERT INTO OrderReceipts VALUES (10003, 3, '식기',         '2011/8/10');
+INSERT INTO OrderReceipts VALUES (10004, 1, '야채',         '2011/8/23');
+INSERT INTO OrderReceipts VALUES (10005, 1, '음료수',       '2011/8/30');
+INSERT INTO OrderReceipts VALUES (10005, 2, '과자',          '2011/8/30');
+
+select * from orders;
+select * from OrderReceipts;
+
+select o.order_id,
+       o.order_id, 　order_shop, 　order_name, 　order_date, order_id, 　order_shop, 　order_name, 　order_date,
+       orc.delivery_date - o.order_date as diff_days
+from orders o
+         inner join OrderReceipts orc on o.order_id = orc.order_id
+where orc.　delivery_date - o.　order_date >= 3;
+
+SELECT o.order_id, o.order_name, DATEDIFF(orc.delivery_date, o.order_date) AS diff_days
+FROM orders o
+INNER JOIN OrderReceipts orc ON o.order_id = orc.order_id
+WHERE DATEDIFF(orc.delivery_date, o.order_date) >= 3;
+
+#주문번호별 최대 지연일을 알고 싶다면 주문번호를 집약
+select o.order_id,
+       max(o.　order_name),
+       max(orc. 　delivery_date - o.　order_date) as max_diff_days
+from Orders o
+inner join OrderReceipts orc
+on o.order_id = orc.order_id
+where orc.　delivery_date - o.　order_date >= 3
+group by o.order_id;
+
+select o.order_id,
+       max(o.　order_name) as order_name,
+       max(o.　order_date) as order_date,
+       count(*) as item_count
+from orders o
+inner join OrderReceipts R on o.order_id = R.order_id
+group by o.order_id;
+
+select o.order_id,
+       o.　order_name,
+       o.　order_date,
+       count(*) over (partition by o.order_id) as item_count
+from Orders o
+inner join OrderReceipts R on o.order_id = R.order_id;
 
 
 

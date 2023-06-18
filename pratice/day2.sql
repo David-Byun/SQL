@@ -480,6 +480,386 @@ select e.emp_id, e.emp_name, e.dept_id,
         where e.dept_id = d.dept_id) as dept_name
 from Employees e;
 
+CREATE TABLE Receipts
+(cust_id   CHAR(1) NOT NULL,
+ seq   INTEGER NOT NULL,
+ price   INTEGER NOT NULL,
+     PRIMARY KEY (cust_id, seq));
+
+INSERT INTO Receipts VALUES ('A',   1   ,500    );
+INSERT INTO Receipts VALUES ('A',   2   ,1000   );
+INSERT INTO Receipts VALUES ('A',   3   ,700    );
+INSERT INTO Receipts VALUES ('B',   5   ,100    );
+INSERT INTO Receipts VALUES ('B',   6   ,5000   );
+INSERT INTO Receipts VALUES ('B',   7   ,300    );
+INSERT INTO Receipts VALUES ('B',   9   ,200    );
+INSERT INTO Receipts VALUES ('B',   12  ,1000   );
+INSERT INTO Receipts VALUES ('C',   10  ,600    );
+INSERT INTO Receipts VALUES ('C',   20  ,100    );
+INSERT INTO Receipts VALUES ('C',   45  ,200    );
+INSERT INTO Receipts VALUES ('C',   70  ,50     );
+INSERT INTO Receipts VALUES ('D',   3   ,2000   );
+
+select cust_id,
+       seq,
+       price,
+       row_number() over (
+           partition by cust_id
+           order by seq
+           ) as row_weq
+from Receipts;
+
+select cust_id,
+       sum(case when min_seq = 1 then price else 0 end)
+           - sum(case when max_seq = 1 then price else 0 end) as diff
+from (select cust_id,
+             price,
+             row_number() over (partition by cust_id
+                 order by seq)      as min_seq,
+             row_number() over (partition by cust_id
+                 order by seq DESC) as max_seq
+      from Receipts) work
+where work.min_seq = 1
+or work.max_seq = 1
+group by cust_id;
+
+select cust_id,
+       price,
+       row_number() over (partition by cust_id
+           order by seq)      as min_seq,
+       row_number() over (partition by cust_id
+           order by seq DESC) as max_seq
+from Receipts;
+
+select * from Receipts;
+
+CREATE TABLE Companies
+(co_cd      CHAR(3) NOT NULL,
+ district   CHAR(1) NOT NULL,
+     CONSTRAINT pk_Companies PRIMARY KEY (co_cd));
+
+INSERT INTO Companies VALUES('001', 'A');
+INSERT INTO Companies VALUES('002', 'B');
+INSERT INTO Companies VALUES('003', 'C');
+INSERT INTO Companies VALUES('004', 'D');
+
+
+CREATE TABLE Shops
+(co_cd      CHAR(3) NOT NULL,
+ shop_id    CHAR(3) NOT NULL,
+ emp_nbr    INTEGER NOT NULL,
+ main_flg   CHAR(1) NOT NULL,
+     PRIMARY KEY (co_cd, shop_id));
+
+INSERT INTO Shops VALUES('001', '1',   300,  'Y');
+INSERT INTO Shops VALUES('001', '2',   400,  'N');
+INSERT INTO Shops VALUES('001', '3',   250,  'Y');
+INSERT INTO Shops VALUES('002', '1',   100,  'Y');
+INSERT INTO Shops VALUES('002', '2',    20,  'N');
+INSERT INTO Shops VALUES('003', '1',   400,  'Y');
+INSERT INTO Shops VALUES('003', '2',   500,  'Y');
+INSERT INTO Shops VALUES('003', '3',   300,  'N');
+INSERT INTO Shops VALUES('003', '4',   200,  'Y');
+INSERT INTO Shops VALUES('004', '1',   999,  'Y');
+
+select * from Shops;
+select * from Companies;
+
+# 결합을 먼저 수행
+select c.co_cd, MAX(c.district) as district,
+       sum(emp_nbr) as sum_emp
+from Companies c
+    inner join shops s
+    on c.co_cd = s.co_cd
+where main_flg = 'Y'
+group by c.co_cd;
+
+# 집약을 먼저 수행
+select c.co_cd, c.district, sum_emp
+from Companies c
+         inner join (select co_cd,
+                            sum(emp_nbr) as sum_emp
+                     from shops
+                     where main_flg = 'Y'
+                     group by co_cd) csum
+                    on c.co_cd = csum.co_cd;
+
+
+CREATE TABLE Weights
+(student_id CHAR(4) PRIMARY KEY,
+ weight     INTEGER);
+
+INSERT INTO Weights VALUES('A100', 50);
+INSERT INTO Weights VALUES('A101', 55);
+INSERT INTO Weights VALUES('A124', 55);
+INSERT INTO Weights VALUES('B343', 60);
+INSERT INTO Weights VALUES('B346', 72);
+INSERT INTO Weights VALUES('C563', 72);
+INSERT INTO Weights VALUES('C345', 72);
+
+select student_id,
+       row_number() over (order by student_id) as seq
+from Weights;
+
+select student_id,
+       (select count(*)
+        from Weights w2
+        where w2.student_id <= w1.student_id) as seq
+from Weights w1;
+
+CREATE TABLE Weights2
+(class      INTEGER NOT NULL,
+ student_id CHAR(4) NOT NULL,
+ weight INTEGER     NOT NULL,
+ PRIMARY KEY(class, student_id));
+
+INSERT INTO Weights2 VALUES(1, '100', 50);
+INSERT INTO Weights2 VALUES(1, '101', 55);
+INSERT INTO Weights2 VALUES(1, '102', 56);
+INSERT INTO Weights2 VALUES(2, '100', 60);
+INSERT INTO Weights2 VALUES(2, '101', 72);
+INSERT INTO Weights2 VALUES(2, '102', 73);
+INSERT INTO Weights2 VALUES(2, '103', 73);
+
+select class, student_id,
+       row_number() over (order by class, student_id) as seq
+from Weights2;
+
+select class, student_id,
+       (select count(*)
+        from Weights2 w2
+        where (w2.class, w2.student_id)
+            <= (w1.class, w1.student_id)) as seq
+from Weights2 w1;
+
+#윈도우 함수 partition by 있는 경우가 있고 없는 경우가 있다.
+select class, student_id,
+       row_number() over (partition by class order by student_id) as seq
+from Weights2;
+
+select class, student_id,
+       (select count(*)
+        from Weights2 w2
+        where w2.class = w1.class
+        and w2.student_id <= w1.student_id) as seq
+from Weights2 w1;
+
+
+CREATE TABLE Weights3
+(class      INTEGER NOT NULL,
+ student_id CHAR(4) NOT NULL,
+ weight INTEGER     NOT NULL,
+ seq    INTEGER     NULL,
+     PRIMARY KEY(class, student_id));
+
+INSERT INTO Weights3 VALUES(1, '100', 50, NULL);
+INSERT INTO Weights3 VALUES(1, '101', 55, NULL);
+INSERT INTO Weights3 VALUES(1, '102', 56, NULL);
+INSERT INTO Weights3 VALUES(2, '100', 60, NULL);
+INSERT INTO Weights3 VALUES(2, '101', 72, NULL);
+INSERT INTO Weights3 VALUES(2, '102', 73, NULL);
+INSERT INTO Weights3 VALUES(2, '103', 73, NULL);
+
+select * from Weights3;
+
+update Weights3
+set seq = (select count(*)
+           from Weights3 w2
+           where w2.class = Weights3.class
+             and w2.student_id <= Weights3.student_id);
+
+select avg(weight) as median
+from (select weight,
+             row_number() over (order by weight asc, student_id asc)   as hi,
+             row_number() over (order by weight desc, student_id desc) as lo
+      from Weights) tmp
+where hi in (lo, lo + 1, lo - 1);
+
+CREATE TABLE Numbers( num INTEGER PRIMARY KEY);
+
+INSERT INTO Numbers VALUES(1);
+INSERT INTO Numbers VALUES(3);
+INSERT INTO Numbers VALUES(4);
+INSERT INTO Numbers VALUES(7);
+INSERT INTO Numbers VALUES(8);
+INSERT INTO Numbers VALUES(9);
+INSERT INTO Numbers VALUES(12);
+
+select * from Numbers;
+
+select num,
+       max(num)
+        over(order by num
+            rows between 1 following
+            and 1 following) as next_num
+from Numbers;
+
+select num + 1          as gap_start,
+       '~',
+       (num + diff - 1) as gap_end
+from (select num,
+             max(num)
+                 over (order by num
+                     rows between 1 following
+                         and 1 following) - num
+      from Numbers) tmp(num, diff)
+where diff <> 1;
+
+
+
+select min(num) as low,
+       '~',
+       max(num) as high,
+       gp
+from (select n1.num,
+       count(n2.num) - n1.num
+from Numbers n1 inner join Numbers n2
+on n2.num <= n1.num
+group by n1.num) N(num, gp)
+group by gp;
+
+CREATE TABLE OmitTbl
+(keycol CHAR(8) NOT NULL,
+ seq    INTEGER NOT NULL,
+ val    INTEGER ,
+  CONSTRAINT pk_OmitTbl PRIMARY KEY (keycol, seq));
+
+INSERT INTO OmitTbl VALUES ('A', 1, 50);
+INSERT INTO OmitTbl VALUES ('A', 2, NULL);
+INSERT INTO OmitTbl VALUES ('A', 3, NULL);
+INSERT INTO OmitTbl VALUES ('A', 4, 70);
+INSERT INTO OmitTbl VALUES ('A', 5, NULL);
+INSERT INTO OmitTbl VALUES ('A', 6, 900);
+INSERT INTO OmitTbl VALUES ('B', 1, 10);
+INSERT INTO OmitTbl VALUES ('B', 2, 20);
+INSERT INTO OmitTbl VALUES ('B', 3, NULL);
+INSERT INTO OmitTbl VALUES ('B', 4, 3);
+INSERT INTO OmitTbl VALUES ('B', 5, NULL);
+INSERT INTO OmitTbl VALUES ('B', 6, NULL);
+
+select * from OmitTbl;
+
+#1. 같은 keycol 가짐 2. 자신보다 작은 seq를 가짐 3. val이 NULL이 아님
+update OmitTbl
+set val = (
+select val
+from OmitTbl ot1
+where ot1.keycol = OmitTbl.keycol
+and ot1.seq = (select max(seq)
+               from OmitTbl ot2
+               where ot2.keycol = OmitTbl.keycol
+                 and ot2.seq < OmitTbl.seq
+                 and ot2.val is not null))
+where val is null;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
